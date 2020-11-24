@@ -1,5 +1,6 @@
 module scene {
     export class MainScene extends es.Scene {
+
         public async onStart(){
             let stageW = Main.Instance.stage.stageWidth;
             let stageH = Main.Instance.stage.stageHeight;
@@ -47,7 +48,12 @@ module scene {
                 .setXY(172, 135)
                 .startAnimation(result);
 
-            console.log("main start");
+            let spawn = this.createEntity("spawn");
+            spawn.addComponent(new component.SpawnerComponent(component.EnemyType.worm));
+
+            this.addEntityProcessor(new system.SpawnerSystem(new es.Matcher().all(component.SpawnerComponent)));
+
+            console.log("main start", this.entities);
         }
     }
 }
