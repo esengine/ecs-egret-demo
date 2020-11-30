@@ -43,8 +43,7 @@ class Main extends egret.DisplayObjectContainer {
 
             context.onUpdate = () => {
                 if (es.Core.Instance) {
-                    es.Time.update(egret.getTimer());
-                    es.Core.emitter.emit(es.CoreEvents.FrameUpdated);
+                    es.Core.emitter.emit(es.CoreEvents.FrameUpdated, egret.getTimer());
                 }
             }
         })
@@ -70,10 +69,17 @@ class Main extends egret.DisplayObjectContainer {
         new es.Core(this.stage.stageWidth, this.stage.stageHeight);
         es.Core.scene = new scene.MainScene();
 
+        es.Core.emitter.addObserver(es.CoreEvents.SceneChanged, this.onGCCollect, this);
+
         await platform.login();
         const userInfo = await platform.getUserInfo();
         console.log(userInfo);
 
+    }
+
+    private onGCCollect(){
+        // wxgame 可调用 wx.triggerGC();
+        // 用于场景转换后加速清理
     }
 
     private async loadResource() {

@@ -1,7 +1,7 @@
 module system {
     export class SpawnerSystem extends es.EntityProcessingSystem {
-        constructor(matcher: es.Matcher){
-            super(matcher);
+        constructor(){
+            super(new es.Matcher().all(component.SpawnerComponent));
         }
 
         processEntity(entity: es.Entity){
@@ -12,7 +12,7 @@ module system {
             if (!spawner.enabled)
                 return;
 
-            if (spawner.cooldown <= -1) {
+            if (spawner.cooldown == -1) {
                 this.scheduleSpawn(spawner);
                 console.log("冷却时间已到，进入下一轮刷新 冷却时间:", spawner.cooldown);
                 spawner.cooldown /= 4;
