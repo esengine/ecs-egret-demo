@@ -74,10 +74,9 @@ class Main extends egret.DisplayObjectContainer {
         await platform.login();
         const userInfo = await platform.getUserInfo();
         console.log(userInfo);
-
     }
 
-    private onGCCollect(){
+    private onGCCollect() {
         // wxgame 可调用 wx.triggerGC();
         // 用于场景转换后加速清理
     }
