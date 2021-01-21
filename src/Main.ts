@@ -43,7 +43,7 @@ class Main extends egret.DisplayObjectContainer {
 
             context.onUpdate = () => {
                 if (es.Core.Instance) {
-                    es.Core.emitter.emit(es.CoreEvents.FrameUpdated, egret.getTimer());
+                    es.Core.emitter.emit(es.CoreEvents.frameUpdated);
                 }
             }
         })
@@ -66,10 +66,10 @@ class Main extends egret.DisplayObjectContainer {
     private async runGame() {
         await this.loadResource();
 
-        new es.Core(this.stage.stageWidth, this.stage.stageHeight);
+        es.Core.create();
         es.Core.scene = new scene.MainScene();
 
-        es.Core.emitter.addObserver(es.CoreEvents.SceneChanged, this.onGCCollect, this);
+        es.Core.emitter.addObserver(es.CoreEvents.sceneChanged, this.onGCCollect, this);
 
         await platform.login();
         const userInfo = await platform.getUserInfo();
