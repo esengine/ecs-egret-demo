@@ -9160,7 +9160,7 @@ var egret;
              */
             _this.compressedTextureData = [];
             _this.debugCompressedTextureURL = '';
-            _this.etcAlphaMask = null;
+            _this.$etcAlphaMask = null;
             if (egret.nativeRender) {
                 var nativeBitmapData = new egret_native.NativeBitmapData();
                 nativeBitmapData.$init();
@@ -9349,12 +9349,31 @@ var egret;
         BitmapData.prototype.getCompressed2dTextureData = function () {
             return this._getCompressedTextureData(0, 0);
         };
+        BitmapData.prototype.$setCompressed2dTextureData = function (levelData) {
+            if (egret.nativeRender && (this.compressedTextureData.length == 0)) {
+                egret_native.NativeDisplayObject.setSourceToNativeBitmapData(this.$nativeBitmapData, levelData[0]);
+            }
+            this.compressedTextureData.push(levelData);
+        };
         BitmapData.prototype.hasCompressed2d = function () {
             return !!this.getCompressed2dTextureData();
         };
         BitmapData.prototype.clearCompressedTextureData = function () {
             this.compressedTextureData.length = 0;
         };
+        Object.defineProperty(BitmapData.prototype, "etcAlphaMask", {
+            get: function () {
+                return this.$etcAlphaMask;
+            },
+            set: function (value) {
+                if (egret.nativeRender) {
+                    egret_native.NativeDisplayObject.setSourceToNativeBitmapData(this.$nativeBitmapData, value);
+                }
+                this.$etcAlphaMask = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
         BitmapData._displayList = egret.createMap();
         return BitmapData;
     }(egret.HashObject));
@@ -13377,14 +13396,14 @@ var egret;
 (function (egret) {
     var sys;
     (function (sys) {
-        var usingChannel = [];
+        sys.usingChannel = [];
         /**
          * @private
          * @param channel
          */
         function $pushSoundChannel(channel) {
-            if (usingChannel.indexOf(channel) < 0) {
-                usingChannel.push(channel);
+            if (sys.usingChannel.indexOf(channel) < 0) {
+                sys.usingChannel.push(channel);
             }
         }
         sys.$pushSoundChannel = $pushSoundChannel;
@@ -13393,9 +13412,9 @@ var egret;
          * @param channel
          */
         function $popSoundChannel(channel) {
-            var index = usingChannel.indexOf(channel);
+            var index = sys.usingChannel.indexOf(channel);
             if (index >= 0) {
-                usingChannel.splice(index, 1);
+                sys.usingChannel.splice(index, 1);
                 return true;
             }
             return false;
@@ -16302,7 +16321,6 @@ var egret;
         };
         KTXContainer.prototype._upload2DCompressedLevels = function (bitmapData, loadMipmaps) {
             bitmapData.clearCompressedTextureData();
-            var compressedTextureData = bitmapData.compressedTextureData;
             // initialize width & height for level 1
             var dataOffset = KTXContainer.HEADER_LEN + this.bytesOfKeyValueData;
             var width = this.pixelWidth;
@@ -16325,7 +16343,7 @@ var egret;
                     dataOffset += imageSize; // add size of the image for the next face/mipmap
                     dataOffset += 3 - ((imageSize + 3) % 4); // add padding for odd sized image
                 }
-                compressedTextureData.push(levelData);
+                bitmapData.$setCompressed2dTextureData(levelData);
                 width = Math.max(1.0, width * 0.5);
                 height = Math.max(1.0, height * 0.5);
             }
@@ -18501,7 +18519,7 @@ var egret;
          * @platform Web,Native
          * @language zh_CN
          */
-        Capabilities.engineVersion = "5.3.10";
+        Capabilities.engineVersion = "5.4.1";
         /***
          * current render mode.
          * @type {string}
@@ -19237,6 +19255,18 @@ var egret;
             this.$textLinesChanged = true;
             //todo lcj
             this.$updateRenderNode();
+            if (!egret.nativeRender) {
+                var p = this.$parent;
+                if (p && !p.$cacheDirty) {
+                    p.$cacheDirty = true;
+                    p.$cacheDirtyUp();
+                }
+                var maskedObject = this.$maskedObject;
+                if (maskedObject && !maskedObject.$cacheDirty) {
+                    maskedObject.$cacheDirty = true;
+                    maskedObject.$cacheDirtyUp();
+                }
+            }
         };
         /**
          * @private
@@ -20542,7 +20572,118 @@ var egret;
 //////////////////////////////////////////////////////////////////////////////////////
 var egret;
 (function (egret) {
-    var SplitRegex = new RegExp("(?=[\\u00BF-\\u1FFF\\u2C00-\\uD7FF]|\\b|\\s)(?![。，！、》…）)}”】\\.\\,\\!\\?\\]\\:])");
+    var defaultRegex = "(?=[\\u00BF-\\u1FFF\\u2C00-\\uD7FF]|\\b|\\s)(?![0-9])(?![。，！、》…）)}”】\\.\\,\\!\\?\\]\\:])";
+    var SplitRegex;
+    /**
+     * @private
+     */
+    var usingWordWrap = [];
+    /**
+     * @private
+     */
+    var languageWordWrapMap = {
+        "Vietnamese": "?![ẮẰẲẴẶĂẤẦẨẪẬÂÁÀÃẢẠĐẾỀỂỄỆÊÉÈẺẼẸÍÌỈĨỊỐỒỔỖỘÔỚỜỞỠỢƠÓÒÕỎỌỨỪỬỮỰƯÚÙỦŨỤÝỲỶỸỴA-Z]"
+    };
+    /**
+     * add new language word wrap regex and use it
+     * if languageKey already exists,the existing regex is replaced
+     * if the pattern is not passed,it will be found and enabled int the existing word wrap map
+     * @param languageKey
+     * @param pattern
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language en_US
+     */
+    /**
+     * 添加新的自动换行的语言正则表达式匹配并启用
+     * 如果已经有该语言了，则会替换现有正则表达式
+     * 不传入正则表达式则会在已有的语言自动换行匹配串中寻找并启用
+     * @param languageKey
+     * @param pattern
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language zh_CN
+     */
+    function addLanguageWordWrapRegex(languageKey, pattern) {
+        if (pattern != undefined) {
+            languageWordWrapMap[languageKey] = pattern;
+        }
+        if (usingWordWrap.indexOf(languageKey) < 0 && languageWordWrapMap[languageKey] != undefined) {
+            usingWordWrap.push(languageKey);
+        }
+        updateWordWrapRegex();
+    }
+    egret.addLanguageWordWrapRegex = addLanguageWordWrapRegex;
+    /**
+     * return the existing word wrap keys
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language en_US
+     */
+    /**
+     * 获取当前已有的自动换行映射键值组
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language zh_CN
+     */
+    function getAllSupportLanguageWordWrap() {
+        var result = [];
+        for (var key in languageWordWrapMap) {
+            result.push(key);
+        }
+        return result;
+    }
+    egret.getAllSupportLanguageWordWrap = getAllSupportLanguageWordWrap;
+    /**
+     * return the using word wrap keys
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language en_US
+     */
+    /**
+     * 获取当前正在使用中的自动换行映射键值组
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language zh_CN
+     */
+    function getUsingWordWrap() {
+        return usingWordWrap;
+    }
+    egret.getUsingWordWrap = getUsingWordWrap;
+    /**
+     * cancels the using word wrap regex by the languageKey
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language en_US
+     */
+    /**
+     * 根据languageKey取消正在启用的自动换行正则表达式
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language zh_CN
+     */
+    function cancelLanguageWordWrapRegex(languageKey) {
+        var index = usingWordWrap.indexOf(languageKey);
+        if (index > -1) {
+            usingWordWrap.splice(index, 1);
+        }
+        updateWordWrapRegex();
+    }
+    egret.cancelLanguageWordWrapRegex = cancelLanguageWordWrapRegex;
+    /**
+     * @private
+     */
+    function updateWordWrapRegex() {
+        var extendRegex = defaultRegex;
+        for (var _i = 0, usingWordWrap_1 = usingWordWrap; _i < usingWordWrap_1.length; _i++) {
+            var key = usingWordWrap_1[_i];
+            if (languageWordWrapMap[key]) {
+                extendRegex += "(" + languageWordWrapMap[key] + ")";
+            }
+        }
+        SplitRegex = new RegExp(extendRegex, "i");
+    }
+    updateWordWrapRegex();
     /**
      * @private
      * 根据样式测量文本宽度
@@ -21894,7 +22035,7 @@ var egret;
                         var x = lines[i];
                         var y = lines[i + 1];
                         var w = lines[i + 2];
-                        var color = lines[i + 3] || textColor;
+                        var color = typeof lines[i + 3] == "number" ? lines[i + 3] : textColor;
                         if (lastColor < 0 || lastColor != color) {
                             lastColor = color;
                             strokePath = graphics.lineStyle(2, color, 1, egret.CapsStyle.NONE);
@@ -22264,7 +22405,7 @@ var egret;
                         lineH = values[0 /* fontSize */];
                     }
                     else {
-                        lineH = Math.max(lineH, element.style.size || values[0 /* fontSize */]);
+                        lineH = Math.max(lineH, typeof (element.style.size) == "number" ? element.style.size : values[0 /* fontSize */]);
                     }
                     var isNextLine = true;
                     if (textArr[j] == "") {
@@ -22492,7 +22633,7 @@ var egret;
                 drawX = Math.round((maxWidth - line.width) * hAlign);
                 for (var j = 0, elementsLength = line.elements.length; j < elementsLength; j++) {
                     var element = line.elements[j];
-                    var size = element.style.size || values[0 /* fontSize */];
+                    var size = typeof element.style.size == "number" ? element.style.size : values[0 /* fontSize */];
                     node.drawText(drawX, drawY + (h - size) / 2, element.text, element.style);
                     if (element.style.underline) {
                         underLineData.push(drawX, drawY + (h) / 2, element.width, element.style.textColor);

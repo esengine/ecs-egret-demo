@@ -27,6 +27,8 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////
 
+import { MainScene } from "./Scenes/MainScene";
+
 class Main extends egret.DisplayObjectContainer {
     public static Instance: Main;
 
@@ -38,36 +40,17 @@ class Main extends egret.DisplayObjectContainer {
     private onAddToStage(event: egret.Event) {
         Main.Instance = this;
 
-        egret.lifecycle.addLifecycleListener((context) => {
-            // custom lifecycle plugin
-
-            context.onUpdate = () => {
-                if (es.Core.Instance) {
-                    es.Core.emitter.emit(es.CoreEvents.frameUpdated);
-                }
-            }
-        })
-
-        egret.lifecycle.onPause = () => {
-            egret.ticker.pause();
-        }
-
-        egret.lifecycle.onResume = () => {
-            egret.ticker.resume();
-        }
-
         this.runGame().catch(e => {
             console.log(e);
         })
-
-
     }
 
     private async runGame() {
         await this.loadResource();
 
-        es.Core.create();
-        es.Core.scene = new scene.MainScene();
+        es.Core.create(this.stage, true);
+        es.Core.debugRenderEndabled = true;
+        es.Core.scene = new MainScene();
 
         es.Core.emitter.addObserver(es.CoreEvents.sceneChanged, this.onGCCollect, this);
 

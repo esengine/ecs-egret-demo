@@ -5867,7 +5867,7 @@ declare namespace egret {
          */
         readonly compressedTextureData: Array<Array<CompressedTextureData>>;
         debugCompressedTextureURL: string;
-        etcAlphaMask: Nullable<BitmapData>;
+        $etcAlphaMask: Nullable<BitmapData>;
         /**
          * Initializes a BitmapData object to refer to the specified source object.
          * @param source The source object being referenced.
@@ -5894,8 +5894,10 @@ declare namespace egret {
         static $dispose(bitmapData: BitmapData): void;
         private _getCompressedTextureData(level, face);
         getCompressed2dTextureData(): CompressedTextureData;
+        $setCompressed2dTextureData(levelData: egret.CompressedTextureData[]): void;
         hasCompressed2d(): boolean;
         clearCompressedTextureData(): void;
+        etcAlphaMask: any;
     }
 }
 declare namespace egret {
@@ -8283,6 +8285,7 @@ declare namespace egret.localStorage {
     let clear: () => void;
 }
 declare namespace egret.sys {
+    let usingChannel: Array<SoundChannel>;
     /**
      * @private
      * @param channel
@@ -12704,6 +12707,66 @@ declare namespace egret.sys {
     }
 }
 declare namespace egret {
+    /**
+     * add new language word wrap regex and use it
+     * if languageKey already exists,the existing regex is replaced
+     * if the pattern is not passed,it will be found and enabled int the existing word wrap map
+     * @param languageKey
+     * @param pattern
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language en_US
+     */
+    /**
+     * 添加新的自动换行的语言正则表达式匹配并启用
+     * 如果已经有该语言了，则会替换现有正则表达式
+     * 不传入正则表达式则会在已有的语言自动换行匹配串中寻找并启用
+     * @param languageKey
+     * @param pattern
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language zh_CN
+     */
+    function addLanguageWordWrapRegex(languageKey: string, pattern?: string): void;
+    /**
+     * return the existing word wrap keys
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language en_US
+     */
+    /**
+     * 获取当前已有的自动换行映射键值组
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language zh_CN
+     */
+    function getAllSupportLanguageWordWrap(): string[];
+    /**
+     * return the using word wrap keys
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language en_US
+     */
+    /**
+     * 获取当前正在使用中的自动换行映射键值组
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language zh_CN
+     */
+    function getUsingWordWrap(): string[];
+    /**
+     * cancels the using word wrap regex by the languageKey
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language en_US
+     */
+    /**
+     * 根据languageKey取消正在启用的自动换行正则表达式
+     * @version Egret 5.3.11
+     * @platform Web
+     * @language zh_CN
+     */
+    function cancelLanguageWordWrapRegex(languageKey: string): void;
     /**
      * TextField is the text rendering class of egret. It conducts rendering by using the browser / device API. Due to different ways of font rendering in different browsers / devices, there may be differences in the rendering
      * If developers expect  no differences among all platforms, please use BitmapText
